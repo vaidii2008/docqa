@@ -26,16 +26,16 @@ uploaded files — no manual skimming.
 
 ## Tech stack
 
-| Layer            | Choice                                      |
-| ---------------- | ------------------------------------------- |
-| Framework        | Next.js 15 (App Router) + TypeScript        |
-| Database         | Postgres + pgvector                         |
-| ORM              | Prisma                                      |
-| Auth             | Auth.js (NextAuth v5)                       |
-| AI / streaming   | Vercel AI SDK                               |
-| Cache / limiting | Upstash Redis                               |
-| Testing          | Vitest + Playwright                         |
-| CI/CD            | GitHub Actions → Vercel                     |
+| Layer            | Choice                               |
+| ---------------- | ------------------------------------ |
+| Framework        | Next.js 15 (App Router) + TypeScript |
+| Database         | Postgres + pgvector                  |
+| ORM              | Prisma                               |
+| Auth             | Auth.js (NextAuth v5)                |
+| AI / streaming   | Vercel AI SDK                        |
+| Cache / limiting | Upstash Redis                        |
+| Testing          | Vitest + Playwright                  |
+| CI/CD            | GitHub Actions → Vercel              |
 
 ## Local setup
 
