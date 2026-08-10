@@ -1,23 +1,17 @@
 import { signOut } from "@/lib/auth";
 import { requireUserId } from "@/lib/auth/session";
-import { prisma } from "@/lib/db";
+import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
+import { UploadForm } from "@/components/documents/upload-form";
+import { DocumentList } from "@/components/documents/document-list";
 
 export default async function DashboardPage() {
   const userId = await requireUserId();
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true },
-  });
+  const workspace = await getOrCreateDefaultWorkspace(userId);
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Signed in as {user?.email}
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold">My Documents</h1>
         <form
           action={async () => {
             "use server";
@@ -33,9 +27,13 @@ export default async function DashboardPage() {
         </form>
       </div>
 
-      <p className="mt-8 text-sm text-gray-600">
-        Your workspaces will appear here.
-      </p>
+      <div className="mt-8">
+        <UploadForm />
+      </div>
+
+      <div className="mt-8">
+        <DocumentList workspaceId={workspace.id} />
+      </div>
     </main>
   );
 }
