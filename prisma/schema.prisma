@@ -71,8 +71,13 @@ model Chunk {
 
 document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  // The `embedding vector(1536)` column is added in Phase 4 via a raw-SQL
-  // migration:  pgvector's type isn't natively modeled by Prisma.
+  // pgvector column. Prisma cannot model the `vector` type natively, so we
+  // declare it as Unsupported and manage its SQL via a raw migration.
+  // The HNSW index on this column lives in raw SQL (see the add_chunk_embedding
+  // migration). Prisma does not track indexes on Unsupported columns, so when
+  // running `prisma migrate dev` in future, discard any generated "DROP INDEX
+  // Chunk_embedding_idx" line: the index is intentional.
+  embedding  Unsupported("vector(768)")?
 
   @@unique([documentId, chunkIndex])
   @@index([documentId])
