@@ -37,19 +37,19 @@ export async function POST(request: Request) {
     preview: c.content.slice(0, 200),
   }));
 
-  // Persist the user's question immediately.
-  await prisma.chatMessage.create({
-    data: { role: "USER", content: question, workspaceId: workspace.id },
-  });
-
   const result = streamText({
     model: google("gemini-3.6-flash"),
     system: buildSystemPrompt(chunks),
     prompt: question,
     onFinish: async ({ text }) => {
-      // Persist the assistant's answer once streaming completes (server side).
-      await prisma.chatMessage.create({
-        data: { role: "ASSISTANT", content: text, workspaceId: workspace.id },
+      // Persist the question and answer together, only after generation
+      // succeeds. If generation fails, onFinish does not run, so we never
+      // leave an orphaned question with no answer.
+      await prisma.chatMessage.createMany({
+        data: [
+          { role: "USER", content: question, workspaceId: workspace.id },
+          { role: "ASSISTANT", content: text, workspaceId: workspace.id },
+        ],
       });
     },
   });
