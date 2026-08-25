@@ -11,7 +11,15 @@ export default async function DashboardPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-12">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">My Documents</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold">My Documents</h1>
+          <a
+            href="/chat"
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium transition-colors hover:bg-gray-100"
+          >
+            Chat
+          </a>
+        </div>
         <form
           action={async () => {
             "use server";
