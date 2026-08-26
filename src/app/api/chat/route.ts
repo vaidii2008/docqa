@@ -6,6 +6,7 @@ import { getOrCreateDefaultWorkspace } from "@/lib/workspace";
 import { retrieveChunks } from "@/lib/rag/retrieve";
 import { buildSystemPrompt } from "@/lib/rag/prompt";
 import { prisma } from "@/lib/db";
+import { ratelimit } from "@/lib/rate-limit";
 
 // Allow the streamed response to run up to 30s.
 export const maxDuration = 30;
@@ -16,6 +17,15 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   const userId = await requireUserId();
+
+  // Rate limit per user before doing any expensive work (retrieval, LLM call).
+  const { success } = await ratelimit.limit(userId);
+  if (!success) {
+    return Response.json(
+      { error: "Rate limit exceeded. Please wait a moment and try again." },
+      { status: 429 },
+    );
+  }
 
   const parsed = bodySchema.safeParse(await request.json());
   if (!parsed.success) {
