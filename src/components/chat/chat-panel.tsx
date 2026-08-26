@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 
 interface Source {
   n: number;
@@ -95,7 +96,7 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4" aria-live="polite">
         {messages.length === 0 ? (
           <p className="text-sm text-gray-500">
             Ask a question about your documents to get started.
@@ -114,9 +115,15 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
                   : "max-w-[80%] rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-900"
               }
             >
-              <p className="whitespace-pre-wrap">
-                {m.content || (isStreaming ? "Thinking..." : "")}
-              </p>
+              {m.role === "user" ? (
+                <p className="whitespace-pre-wrap">{m.content}</p>
+              ) : m.content ? (
+                <div className="prose prose-sm max-w-none prose-p:my-2 prose-li:my-0.5">
+                  <ReactMarkdown>{m.content}</ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-gray-500">Thinking...</p>
+              )}
 
               {m.sources && m.sources.length > 0 ? (
                 <div className="mt-3 border-t border-gray-200 pt-2">
