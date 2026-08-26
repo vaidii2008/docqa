@@ -1,5 +1,7 @@
 # DocQA — AI-Powered Document Q&A
 
+[![CI](https://github.com/vaidii2008/docqa/actions/workflows/ci.yml/badge.svg)](https://github.com/vaidii2008/docqa/actions/workflows/ci.yml)
+
 > Upload PDFs into private workspaces and ask questions. DocQA answers in
 > streamed text with citations back to the exact source passages. Applied RAG
 > (Retrieval-Augmented Generation) wrapped in a real product.
