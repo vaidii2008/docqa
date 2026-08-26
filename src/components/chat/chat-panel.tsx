@@ -42,6 +42,10 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
         body: JSON.stringify({ question }),
       });
 
+      if (res.status === 429) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Rate limit exceeded.");
+      }
       if (!res.ok || !res.body) {
         throw new Error("Request failed");
       }
@@ -74,13 +78,14 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
         next[next.length - 1] = { role: "assistant", content: answer, sources };
         return next;
       });
-    } catch {
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Sorry, something went wrong answering that.";
       setMessages((prev) => {
         const next = [...prev];
-        next[next.length - 1] = {
-          role: "assistant",
-          content: "Sorry, something went wrong answering that.",
-        };
+        next[next.length - 1] = { role: "assistant", content: message };
         return next;
       });
     } finally {
