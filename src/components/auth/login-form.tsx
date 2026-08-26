@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState } from "react";
-import Link from "next/link";
 import { loginUser, type LoginState } from "@/lib/auth/login";
 
 const initialState: LoginState = {};
