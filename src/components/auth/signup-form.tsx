@@ -25,7 +25,16 @@ export function SignupForm() {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form
+      action={formAction}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.requestSubmit();
+        }
+      }}
+      className="flex flex-col gap-4"
+    >
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className="text-sm font-medium">
           Name
