@@ -1,7 +1,7 @@
 // DocQA data model, see https://pris.ly/d/prisma-schema
 generator client {
   provider = "prisma-client"
-  output = "../src/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -24,22 +24,22 @@ enum MessageRole {
 // -----Models-----
 
 model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
+  id           String   @id @default(cuid())
+  email        String   @unique
   passwordHash String
   name         String?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  workspaces   Workspace[]
+  workspaces Workspace[]
 }
 
 model Workspace {
-  id        String        @id @default(cuid())
+  id        String   @id @default(cuid())
   name      String
   userId    String
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   documents Document[]
@@ -56,8 +56,8 @@ model Document {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  chunks      Chunk[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  chunks    Chunk[]
 
   @@index([workspaceId])
 }
@@ -69,7 +69,7 @@ model Chunk {
   documentId String
   createdAt  DateTime @default(now())
 
-document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   // pgvector column. Prisma cannot model the `vector` type natively, so we
   // declare it as Unsupported and manage its SQL via a raw migration.
@@ -77,11 +77,12 @@ document   Document @relation(fields: [documentId], references: [id], onDelete: 
   // migration). Prisma does not track indexes on Unsupported columns, so when
   // running `prisma migrate dev` in future, discard any generated "DROP INDEX
   // Chunk_embedding_idx" line: the index is intentional.
-  embedding  Unsupported("vector(768)")?
+  embedding Unsupported("vector(768)")?
 
   @@unique([documentId, chunkIndex])
   @@index([documentId])
 }
+
 model ChatMessage {
   id          String      @id @default(cuid())
   role        MessageRole
@@ -89,7 +90,7 @@ model ChatMessage {
   workspaceId String
   createdAt   DateTime    @default(now())
 
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
 }
