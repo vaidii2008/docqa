@@ -80,7 +80,9 @@ These are the choices I would talk through in a review.
 
 - **Rate limiting below the provider's quota.** A per-user sliding window (keyed by the session user id) is set just under the LLM provider's free-tier limit, so the limiter absorbs bursts and returns a clean 429 before ever spending an upstream call. The counter lives in Redis, so it stays consistent across serverless instances where in-memory state could not.
 
-- **Synchronous embedding, with a clear scale path.** Chunks are embedded inside the upload request, which is simple and makes a document query-ready the moment it is `READY`. At scale the right move is to enqueue embedding as a background job so uploads return instantly and a worker fills in vectors: a deliberate trade of immediate consistency for responsiveness.
+- **Background embedding via a message queue.** Ingestion is split in two. The upload request extracts text, chunks it, and stores the chunk rows with null vectors, which is CPU bound and fast. It then publishes a job to Upstash QStash and returns immediately with the document in `PROCESSING`. QStash delivers the job over HTTP to a signed worker route, which embeds the chunks and flips the document to `READY`; the dashboard polls until it does. The worker only ever selects chunks whose embedding is null, so it is idempotent: QStash guarantees at-least-once delivery, and that is only safe if a redelivered message is a no-op. Retries and the dead-letter queue belong to QStash, and the worker deliberately does not mark a document `FAILED` on error, because a transient rate limit from the embedding provider should become a retry rather than a permanently broken document.
+
+- **Why a queue rather than `waitUntil` or a cron-drained job table.** `waitUntil` needs no infrastructure but has no retries and no visibility, so a killed function strands a document in `PROCESSING` with nothing to recover it. A job table drained by cron is durable, but Vercel's Hobby plan caps cron at one run per day, which would mean waiting until tomorrow for an upload to finish. QStash gives retries, a dead-letter queue, and request signing without hand-rolling queue semantics, and runs locally through its dev server so the code path under test is the one that ships. Honest caveat: at current document sizes the synchronous path was already fast (a 19-chunk PDF completed in under two seconds, with extraction rather than embedding dominating the request), so this is the scaling path rather than a fix for a timeout I was actually hitting.
 
 - **JWT sessions.** With a credentials provider, the session is a signed token in an httpOnly cookie rather than a database row, so there is no per-request database lookup to authenticate: a good fit for serverless. The user id is stamped into the token and used to scope every query, which closes the most common access-control hole (IDOR).
 
@@ -146,7 +148,6 @@ The app is deployed on **Vercel**, with **Neon** for serverless Postgres (querie
 - **Scanned / image-only PDFs are not supported.** There is no text layer to extract and embed, so they fail gracefully with a clear message. Adding OCR (for example Tesseract) is the natural next step.
 - **Math notation renders as raw LaTeX.** Answers render Markdown but not math; a `remark-math` plugin would fix this.
 - **Single default workspace per user.** The multi-workspace data model is in place; the management UI is future work.
-- **Synchronous embedding.** Moving ingestion to a background queue would make uploads return instantly (see the trade-off above).
 
 ## License
 
