@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { loginUser, type LoginState } from "@/lib/auth/login";
+import { PasswordInput } from "@/components/auth/password-input";
 
 const initialState: LoginState = {};
 
@@ -36,19 +37,12 @@ export function LoginForm() {
         />
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-gray-900"
-        />
-      </div>
+      <PasswordInput
+        id="password"
+        name="password"
+        label="Password"
+        autoComplete="current-password"
+      />
 
       {state.error ? (
         <p className="text-sm text-red-600" role="alert">
