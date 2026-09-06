@@ -31,7 +31,29 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  workspaces Workspace[]
+  // TOTP second factor. The secret is stored only once the user has proved
+  // they can generate a valid code from it, so a half finished enrollment
+  // leaves both fields null and the account unchanged.
+  totpSecret    String?
+  totpEnabledAt DateTime?
+
+  workspaces    Workspace[]
+  recoveryCodes RecoveryCode[]
+}
+
+// Single use codes that stand in for a TOTP code when the user has lost their
+// authenticator. Hashed like a password, because a leaked table would
+// otherwise hand over a working second factor for every account.
+model RecoveryCode {
+  id        String    @id @default(cuid())
+  codeHash  String
+  userId    String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Workspace {
