@@ -10,6 +10,10 @@ import {
 } from "@/lib/auth/totp";
 import { renderQrSvg } from "@/lib/auth/qr";
 import {
+  generateRecoveryCodes,
+  hashRecoveryCodes,
+} from "@/lib/auth/recovery-codes";
+import {
   setPendingSecret,
   getPendingSecret,
   clearPendingSecret,
@@ -23,6 +27,9 @@ export type StartEnrollmentState = {
 
 export type ConfirmEnrollmentState = {
   success?: boolean;
+  // Plaintext recovery codes, returned exactly once. Only their hashes are
+  // stored, so there is no way to show them again after this response.
+  recoveryCodes?: string[];
   error?: string;
 };
 
@@ -100,13 +107,24 @@ export async function confirmEnrollment(
     return { error: "That code is not valid. Check your app and try again." };
   }
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: { totpSecret: secret, totpEnabledAt: new Date() },
-  });
+  const recoveryCodes = generateRecoveryCodes();
+  const codeHashes = await hashRecoveryCodes(recoveryCodes);
+
+  // One transaction so a user can never end up with the second factor enabled
+  // but no recovery codes, which would be an unrecoverable lockout if they
+  // lost their phone.
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { totpSecret: secret, totpEnabledAt: new Date() },
+    }),
+    prisma.recoveryCode.createMany({
+      data: codeHashes.map((codeHash) => ({ codeHash, userId })),
+    }),
+  ]);
 
   await clearPendingSecret();
   revalidatePath("/settings/security");
 
-  return { success: true };
+  return { success: true, recoveryCodes };
 }
