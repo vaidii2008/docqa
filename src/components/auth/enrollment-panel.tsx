@@ -13,12 +13,54 @@ const initialConfirmState: ConfirmEnrollmentState = {};
 export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
   const [start, setStart] = useState<StartEnrollmentState | null>(null);
   const [starting, setStarting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [confirmState, confirmAction, confirming] = useActionState(
     confirmEnrollment,
     initialConfirmState,
   );
 
-  if (enabledAt || confirmState.success) {
+  // Shown once, immediately after enrollment. Only hashes are stored, so
+  // navigating away loses these codes permanently.
+  if (confirmState.recoveryCodes?.length) {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          Two factor authentication is on.
+        </p>
+
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-900">
+            Save your recovery codes
+          </p>
+          <p className="mt-1 text-sm text-amber-800">
+            Each code works once, and only if you lose access to your
+            authenticator app. This is the only time they will be shown.
+          </p>
+
+          <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-sm text-amber-900">
+            {confirmState.recoveryCodes.map((code) => (
+              <li key={code}>{code}</li>
+            ))}
+          </ul>
+
+          <button
+            type="button"
+            onClick={() => {
+              void navigator.clipboard.writeText(
+                confirmState.recoveryCodes?.join("\n") ?? "",
+              );
+              setCopied(true);
+            }}
+            className="mt-4 rounded-md border border-amber-300 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100"
+          >
+            {copied ? "Copied" : "Copy codes"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (enabledAt) {
     return (
       <p className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
         Two factor authentication is on. You will be asked for a code from your
