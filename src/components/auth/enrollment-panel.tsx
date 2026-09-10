@@ -4,16 +4,24 @@ import { useState, useActionState } from "react";
 import {
   startEnrollment,
   confirmEnrollment,
+  disableTotp,
   type StartEnrollmentState,
   type ConfirmEnrollmentState,
+  type DisableState,
 } from "@/lib/auth/enrollment";
 
 const initialConfirmState: ConfirmEnrollmentState = {};
+const initialDisableState: DisableState = {};
 
 export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
   const [start, setStart] = useState<StartEnrollmentState | null>(null);
   const [starting, setStarting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+  const [disableState, disableAction, disablePending] = useActionState(
+    disableTotp,
+    initialDisableState,
+  );
   const [confirmState, confirmAction, confirming] = useActionState(
     confirmEnrollment,
     initialConfirmState,
@@ -60,12 +68,70 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
     );
   }
 
-  if (enabledAt) {
+  if (enabledAt && !disableState.success) {
     return (
-      <p className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-        Two factor authentication is on. You will be asked for a code from your
-        authenticator app the next time you sign in.
-      </p>
+      <div className="flex flex-col gap-3">
+        <p className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          Two factor authentication is on. You will be asked for a code from
+          your authenticator app the next time you sign in.
+        </p>
+
+        {disabling ? (
+          <form action={disableAction} className="flex flex-col gap-3">
+            <p className="text-sm">
+              Enter a current code to turn this off. Your recovery codes will
+              be deleted too.
+            </p>
+
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="disable-code" className="text-sm font-medium">
+                Code
+              </label>
+              <input
+                id="disable-code"
+                name="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                required
+                className="w-40 rounded-md border border-gray-300 px-3 py-2 font-mono text-sm outline-none focus:border-gray-900"
+              />
+            </div>
+
+            {disableState.error ? (
+              <p className="text-sm text-red-600" role="alert">
+                {disableState.error}
+              </p>
+            ) : null}
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={disablePending}
+                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {disablePending ? "Turning off..." : "Turn off"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisabling(false)}
+                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setDisabling(true)}
+            className="self-start text-sm font-medium text-red-600 underline transition-colors hover:text-red-700"
+          >
+            Turn off two factor authentication
+          </button>
+        )}
+      </div>
     );
   }
 
