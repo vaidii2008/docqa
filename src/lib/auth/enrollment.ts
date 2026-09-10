@@ -73,6 +73,56 @@ export async function startEnrollment(): Promise<StartEnrollmentState> {
  * the server agree, so a user cannot end up with 2FA enabled against a secret
  * their phone never received, which would lock them out permanently.
  */
+export type DisableState = {
+  success?: boolean;
+  error?: string;
+};
+
+/**
+ * Turn the second factor off. Requires a current code, so someone who walks up
+ * to an unlocked laptop cannot strip the protection without the phone.
+ *
+ * Recovery codes are deleted alongside the secret: they exist only to stand in
+ * for that secret, so leaving them behind would keep working credentials for a
+ * factor that no longer exists.
+ */
+export async function disableTotp(
+  _prevState: DisableState,
+  formData: FormData,
+): Promise<DisableState> {
+  const userId = await requireUserId();
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, totpSecret: true },
+  });
+
+  if (!user?.totpSecret) {
+    return { error: "Two factor authentication is not enabled" };
+  }
+
+  const code = formData.get("code");
+  if (typeof code !== "string") {
+    return { error: "Enter the 6 digit code from your authenticator app" };
+  }
+
+  if (!verifyTotpCode({ secret: user.totpSecret, email: user.email, code })) {
+    return { error: "That code is not valid. Check your app and try again." };
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: { totpSecret: null, totpEnabledAt: null },
+    }),
+    prisma.recoveryCode.deleteMany({ where: { userId } }),
+  ]);
+
+  revalidatePath("/settings/security");
+
+  return { success: true };
+}
+
 export async function confirmEnrollment(
   _prevState: ConfirmEnrollmentState,
   formData: FormData,
