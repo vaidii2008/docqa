@@ -9,6 +9,7 @@ import {
   verifyTotpCode,
 } from "@/lib/auth/totp";
 import { renderQrSvg } from "@/lib/auth/qr";
+import { totpRatelimit } from "@/lib/rate-limit";
 import {
   generateRecoveryCodes,
   hashRecoveryCodes,
@@ -106,6 +107,11 @@ export async function disableTotp(
     return { error: "Enter the 6 digit code from your authenticator app" };
   }
 
+  const { success } = await totpRatelimit.limit(`disable:${userId}`);
+  if (!success) {
+    return { error: "Too many attempts. Wait a few minutes and try again." };
+  }
+
   if (!verifyTotpCode({ secret: user.totpSecret, email: user.email, code })) {
     return { error: "That code is not valid. Check your app and try again." };
   }
@@ -151,6 +157,13 @@ export async function confirmEnrollment(
   const code = formData.get("code");
   if (typeof code !== "string") {
     return { error: "Enter the 6 digit code from your authenticator app" };
+  }
+
+  // Keyed by user id, so one account cannot grind through the code space and
+  // cannot exhaust anyone else's allowance either.
+  const { success } = await totpRatelimit.limit(`enroll:${userId}`);
+  if (!success) {
+    return { error: "Too many attempts. Wait a few minutes and try again." };
   }
 
   if (!verifyTotpCode({ secret, email: user.email, code })) {

@@ -8,6 +8,7 @@ import { Redis } from "@upstash/redis";
  */
 const globalForRateLimit = globalThis as unknown as {
   ratelimit?: Ratelimit;
+  totpRatelimit?: Ratelimit;
 };
 
 export const ratelimit =
@@ -21,4 +22,25 @@ export const ratelimit =
 
 if (process.env.NODE_ENV !== "production") {
   globalForRateLimit.ratelimit = ratelimit;
+}
+
+/**
+ * Stricter limiter for second factor code entry: 5 attempts per 5 minutes.
+ *
+ * A 6 digit code is only a million possibilities, so an attacker who already
+ * holds a session could otherwise grind through them. Its own instance and
+ * prefix keep that budget separate from ordinary request limiting, so normal
+ * app use cannot exhaust the allowance that protects the code.
+ */
+export const totpRatelimit =
+  globalForRateLimit.totpRatelimit ??
+  new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(5, "300 s"),
+    analytics: true,
+    prefix: "docqa/ratelimit/totp",
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForRateLimit.totpRatelimit = totpRatelimit;
 }
