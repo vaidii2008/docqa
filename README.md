@@ -86,6 +86,10 @@ These are the choices I would talk through in a review.
 
 - **JWT sessions.** With a credentials provider, the session is a signed token in an httpOnly cookie rather than a database row, so there is no per-request database lookup to authenticate: a good fit for serverless. The user id is stamped into the token and used to scope every query, which closes the most common access-control hole (IDOR).
 
+- **TOTP as the second factor, confirmed before it is stored.** Authenticator codes need no email provider and no delivery cost, and they work offline, which email codes and passkeys do not. Enrollment mints a candidate secret, holds it in an encrypted cookie, and only writes it to the user once they have produced a valid code from it. That ordering matters: enabling a second factor against a secret the phone never received would lock the user out permanently, so the server never turns it on without proof the two sides agree.
+
+- **Recovery codes, hashed, shown once.** Ten single use codes are issued in the same transaction that enables the second factor, because a user with 2FA on and no recovery path is one lost phone away from an unrecoverable account. They are hashed with bcrypt like passwords, since a recovery code grants account access and a leaked table would otherwise hand over a working second factor for every user. Generation uses the OS CSPRNG rather than `Math.random`, whose output is predictable given enough samples. Code entry is rate limited separately from ordinary requests: six digits is a small enough space that unlimited attempts turn the factor into a delay rather than a barrier.
+
 ## Local development
 
 ### Prerequisites
