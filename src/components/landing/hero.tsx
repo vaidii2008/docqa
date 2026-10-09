@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { outlineButton, tonalButton } from "@/components/ui/button-variants";
+import { TypingPrompt } from "@/components/landing/typing-prompt";
 import { REPO_URL } from "@/lib/site";
 
 const STARTERS = [
@@ -38,7 +39,7 @@ export function Hero() {
             <PlusIcon />
           </span>
           <span className="text-fg-muted min-w-0 flex-1 truncate px-1 py-2.5 text-[17px]">
-            Ask about your documents
+            <TypingPrompt />
           </span>
           <span className="bg-primary text-on-primary grid size-11 shrink-0 place-items-center rounded-full">
             <ArrowUpIcon />
