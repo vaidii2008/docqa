@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { AuraBackground } from "@/components/ui/aura-background";
 import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
+import { ProductPreview } from "@/components/landing/product-preview";
+import { HowItWorks } from "@/components/landing/how-it-works";
 
 export default async function HomePage() {
   const session = await auth();
@@ -16,6 +18,8 @@ export default async function HomePage() {
       <SiteHeader />
       <main>
         <Hero />
+        <ProductPreview />
+        <HowItWorks />
       </main>
     </div>
   );
