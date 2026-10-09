@@ -106,7 +106,9 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
         {messages.map((m, i) => (
           <div
             key={i}
-            className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
+            className={
+              m.role === "user" ? "flex justify-end" : "flex justify-start"
+            }
           >
             <div
               className={
@@ -118,7 +120,7 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
               {m.role === "user" ? (
                 <p className="whitespace-pre-wrap">{m.content}</p>
               ) : m.content ? (
-                <div className="prose prose-sm max-w-none prose-p:my-2 prose-li:my-0.5">
+                <div className="prose prose-sm prose-p:my-2 prose-li:my-0.5 max-w-none">
                   <ReactMarkdown>{m.content}</ReactMarkdown>
                 </div>
               ) : (
@@ -133,7 +135,8 @@ export function ChatPanel({ initialMessages }: { initialMessages: Message[] }) {
                   <ul className="flex flex-col gap-1">
                     {m.sources.map((s) => (
                       <li key={s.n} className="text-xs text-gray-600">
-                        <span className="font-medium">[{s.n}]</span> {s.filename}{" "}
+                        <span className="font-medium">[{s.n}]</span>{" "}
+                        {s.filename}{" "}
                         <span className="text-gray-400">
                           ({(s.similarity * 100).toFixed(0)}% match)
                         </span>

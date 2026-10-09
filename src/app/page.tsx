@@ -5,6 +5,9 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { Hero } from "@/components/landing/hero";
 import { ProductPreview } from "@/components/landing/product-preview";
 import { HowItWorks } from "@/components/landing/how-it-works";
+import { Privacy } from "@/components/landing/privacy";
+import { FinalCta } from "@/components/landing/final-cta";
+import { SiteFooter } from "@/components/landing/site-footer";
 
 export default async function HomePage() {
   const session = await auth();
@@ -20,7 +23,10 @@ export default async function HomePage() {
         <Hero />
         <ProductPreview />
         <HowItWorks />
+        <Privacy />
+        <FinalCta />
       </main>
+      <SiteFooter />
     </div>
   );
 }

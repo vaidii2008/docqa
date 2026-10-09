@@ -79,8 +79,8 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
         {disabling ? (
           <form action={disableAction} className="flex flex-col gap-3">
             <p className="text-sm">
-              Enter a current code to turn this off. Your recovery codes will
-              be deleted too.
+              Enter a current code to turn this off. Your recovery codes will be
+              deleted too.
             </p>
 
             <div className="flex flex-col gap-1.5">

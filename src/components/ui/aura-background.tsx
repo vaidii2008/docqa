@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { AURA_GRADIENT } from "@/components/ui/aura-gradient";
 
 // How far the glow moves toward the cursor on each frame. Lower feels lazier.
 const EASING = 0.06;
@@ -71,13 +72,7 @@ export function AuraBackground() {
     >
       <div
         className="animate-aura absolute inset-0 motion-reduce:animate-none"
-        style={{
-          background: [
-            "radial-gradient(60% 50% at 20% 0%, var(--aura-1), transparent 70%)",
-            "radial-gradient(50% 45% at 85% 10%, var(--aura-2), transparent 70%)",
-            "radial-gradient(45% 40% at 55% 100%, var(--aura-3), transparent 70%)",
-          ].join(", "),
-        }}
+        style={{ background: AURA_GRADIENT }}
       />
       <div
         ref={glowRef}
