@@ -28,7 +28,7 @@ export function ThemeToggle() {
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={label}
       title={label}
-      className="relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-full bg-surface text-fg transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      className="bg-surface text-fg hover:bg-surface-2 focus-visible:outline-primary relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
     >
       {/* The icons swap with CSS keyed off data-theme, which next-themes sets
           before the first paint, so the right icon shows even before React
@@ -52,7 +52,7 @@ function MoonIcon() {
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
-      className="absolute transition-all duration-500 ease-out motion-reduce:transition-none dark:-rotate-90 dark:scale-50 dark:opacity-0"
+      className="absolute transition-all duration-500 ease-out motion-reduce:transition-none dark:scale-50 dark:-rotate-90 dark:opacity-0"
     >
       <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" />
     </svg>
@@ -70,7 +70,7 @@ function SunIcon() {
       strokeWidth="1.8"
       strokeLinecap="round"
       aria-hidden="true"
-      className="absolute rotate-90 scale-50 opacity-0 transition-all duration-500 ease-out motion-reduce:transition-none dark:rotate-0 dark:scale-100 dark:opacity-100"
+      className="absolute scale-50 rotate-90 opacity-0 transition-all duration-500 ease-out motion-reduce:transition-none dark:scale-100 dark:rotate-0 dark:opacity-100"
     >
       <circle cx="12" cy="12" r="4.2" />
       <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />

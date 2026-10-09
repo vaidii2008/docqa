@@ -70,7 +70,7 @@ export function AuraBackground() {
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
     >
       <div
-        className="absolute inset-0 animate-aura motion-reduce:animate-none"
+        className="animate-aura absolute inset-0 motion-reduce:animate-none"
         style={{
           background: [
             "radial-gradient(60% 50% at 20% 0%, var(--aura-1), transparent 70%)",
