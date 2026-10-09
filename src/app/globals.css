@@ -5,25 +5,104 @@
    <html>, instead of the operating system setting, so the toggle wins. */
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+/* Lumen design tokens. Components never use raw hex values: they use these
+   names, so light and dark only differ here. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --page: #f3f5fa;
+  --card: #ffffff;
+  --surface: #f0f2f8;
+  --surface-2: #e6e9f2;
+  --surface-3: #d9deea;
+  --fg: #1b1c20;
+  --fg-muted: #474c59;
+  --fg-subtle: #646979;
+  --line: rgb(27 28 32 / 0.12);
+  --primary: #2f49c4;
+  --on-primary: #ffffff;
+  --primary-container: #dee3ff;
+  --on-primary-container: #13206b;
+  --accent-1: #0f8f86;
+  --accent-2: #4f46e5;
+  --accent-3: #c2410c;
+  --aura-1: rgb(20 184 166 / 0.32);
+  --aura-2: rgb(99 102 241 / 0.3);
+  --aura-3: rgb(251 146 60 / 0.26);
+  --danger: #b3261e;
+  --danger-container: #fce4e2;
+  --success: #146c2e;
+  --success-container: #ddf5e3;
+  --mark: rgb(99 102 241 / 0.16);
+  --shadow-color: rgb(27 28 32 / 0.08);
 }
 
 [data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --bg: #111216;
+  --page: #111216;
+  --card: #1b1c22;
+  --surface: #1e1f26;
+  --surface-2: #272932;
+  --surface-3: #32353f;
+  --fg: #e6e7ec;
+  --fg-muted: #b7bbc8;
+  --fg-subtle: #9196a5;
+  --line: rgb(230 231 236 / 0.12);
+  --primary: #abb9ff;
+  --on-primary: #0f1a55;
+  --primary-container: #2a3570;
+  --on-primary-container: #dee3ff;
+  --accent-1: #5eead4;
+  --accent-2: #a5b4fc;
+  --accent-3: #fdba74;
+  --aura-1: rgb(45 212 191 / 0.22);
+  --aura-2: rgb(129 140 248 / 0.24);
+  --aura-3: rgb(253 186 116 / 0.16);
+  --danger: #f2b8b5;
+  --danger-container: #4a1b19;
+  --success: #7cd992;
+  --success-container: #163a22;
+  --mark: rgb(165 180 252 / 0.18);
+  --shadow-color: rgb(0 0 0 / 0.45);
 }
 
+/* Expose the tokens as Tailwind colours, so bg-surface, text-fg-muted,
+   bg-primary and friends exist and follow the theme automatically. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-accent-1: var(--accent-1);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+  --color-aura-1: var(--aura-1);
+  --color-aura-2: var(--aura-2);
+  --color-aura-3: var(--aura-3);
+  --color-danger: var(--danger);
+  --color-danger-container: var(--danger-container);
+  --color-success: var(--success);
+  --color-success-container: var(--success-container);
+  --color-mark: var(--mark);
+  --shadow-soft: 0 1px 3px var(--shadow-color), 0 8px 28px var(--shadow-color);
+  --font-sans: var(--font-figtree);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
 }
