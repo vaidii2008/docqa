@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
+import { AuraBackground } from "@/components/ui/aura-background";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export default function LoginPage() {
   return (
-    <main className="relative flex min-h-screen items-center justify-center px-4">
+    <main className="relative isolate flex min-h-screen items-center justify-center px-4">
+      <AuraBackground />
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>

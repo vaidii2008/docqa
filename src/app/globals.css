@@ -106,3 +106,18 @@ body {
     background-color 0.4s ease,
     color 0.4s ease;
 }
+
+/* Slow drift for the ambient glow behind the marketing and auth pages.
+   Exposed as the animate-aura utility. */
+@theme {
+  --animate-aura: aura-drift 18s ease-in-out infinite alternate;
+
+  @keyframes aura-drift {
+    from {
+      transform: scale(1) translate(0, 0);
+    }
+    to {
+      transform: scale(1.08) translate(-2%, 2%);
+    }
+  }
+}
