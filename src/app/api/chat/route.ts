@@ -7,6 +7,7 @@ import { retrieveChunks } from "@/lib/rag/retrieve";
 import { buildSystemPrompt } from "@/lib/rag/prompt";
 import { prisma } from "@/lib/db";
 import { ratelimit } from "@/lib/rate-limit";
+import { checkLimit } from "@/lib/rate-limit/check-limit";
 
 // Allow the streamed response to run up to 30s.
 export const maxDuration = 30;
@@ -19,8 +20,11 @@ export async function POST(request: Request) {
   const userId = await requireUserId();
 
   // Rate limit per user before doing any expensive work (retrieval, LLM call).
-  const { success } = await ratelimit.limit(userId);
-  if (!success) {
+  // Fails open: if the limiter cannot be reached, the question still goes
+  // through. This limit guards cost rather than security, and the AI provider
+  // still enforces its own quota, so a Redis outage should not take chat down.
+  const limit = await checkLimit(ratelimit, userId);
+  if (limit === "limited") {
     return Response.json(
       { error: "Rate limit exceeded. Please wait a moment and try again." },
       { status: 429 },

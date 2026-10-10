@@ -11,6 +11,7 @@ import {
 } from "@/lib/auth/totp";
 import { renderQrSvg } from "@/lib/auth/qr";
 import { totpRatelimit } from "@/lib/rate-limit";
+import { checkLimit } from "@/lib/rate-limit/check-limit";
 import {
   generateRecoveryCodes,
   hashRecoveryCodes,
@@ -43,6 +44,28 @@ export type ConfirmEnrollmentState = {
 function readCode(formData: FormData): string | null {
   const raw = formData.get("code");
   return typeof raw === "string" ? normaliseTotpCode(raw) : null;
+}
+
+/**
+ * Spend one of the user's code attempts. Returns an error to show, or null
+ * when the code may be checked.
+ *
+ * Fails closed: if the limiter cannot be reached, the attempt is refused
+ * rather than checked without a limit, because the limit is the only thing
+ * stopping someone from guessing their way through all million codes.
+ */
+async function spendAttempt(key: string): Promise<string | null> {
+  const limit = await checkLimit(totpRatelimit, key);
+
+  if (limit === "unavailable") {
+    return "We could not check that code just now. Try again in a minute.";
+  }
+
+  if (limit === "limited") {
+    return "Too many attempts. Wait a few minutes and try again.";
+  }
+
+  return null;
 }
 
 /**
@@ -110,9 +133,9 @@ export async function disableTotp(
     return { error: "Enter the 6 digit code from your authenticator app" };
   }
 
-  const { success } = await totpRatelimit.limit(`disable:${userId}`);
-  if (!success) {
-    return { error: "Too many attempts. Wait a few minutes and try again." };
+  const attemptError = await spendAttempt(`disable:${userId}`);
+  if (attemptError) {
+    return { error: attemptError };
   }
 
   if (!verifyTotpCode({ secret: user.totpSecret, email: user.email, code })) {
@@ -172,9 +195,9 @@ export async function confirmEnrollment(
 
   // Keyed by user id, so one account cannot grind through the code space and
   // cannot exhaust anyone else's allowance either.
-  const { success } = await totpRatelimit.limit(`enroll:${userId}`);
-  if (!success) {
-    return { error: "Too many attempts. Wait a few minutes and try again." };
+  const attemptError = await spendAttempt(`enroll:${userId}`);
+  if (attemptError) {
+    return { error: attemptError };
   }
 
   if (!verifyTotpCode({ secret, email: user.email, code })) {
