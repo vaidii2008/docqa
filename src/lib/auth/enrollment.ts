@@ -6,6 +6,7 @@ import { requireUserId } from "@/lib/auth/session";
 import {
   generateTotpSecret,
   buildTotpUri,
+  normaliseTotpCode,
   verifyTotpCode,
 } from "@/lib/auth/totp";
 import { renderQrSvg } from "@/lib/auth/qr";
@@ -33,6 +34,16 @@ export type ConfirmEnrollmentState = {
   recoveryCodes?: string[];
   error?: string;
 };
+
+/**
+ * Read the code from the form and check its shape. Both actions below call
+ * this before the rate limit, so a half typed or empty code is turned away
+ * without using up one of the user's attempts.
+ */
+function readCode(formData: FormData): string | null {
+  const raw = formData.get("code");
+  return typeof raw === "string" ? normaliseTotpCode(raw) : null;
+}
 
 /**
  * Begin enrollment: mint a candidate secret, stash it in the encrypted cookie
@@ -66,14 +77,6 @@ export async function startEnrollment(): Promise<StartEnrollmentState> {
   };
 }
 
-/**
- * Finish enrollment: verify a code generated from the candidate secret, and
- * only persist the secret once that succeeds.
- *
- * Confirming before storing is the point. It proves the authenticator app and
- * the server agree, so a user cannot end up with 2FA enabled against a secret
- * their phone never received, which would lock them out permanently.
- */
 export type DisableState = {
   success?: boolean;
   error?: string;
@@ -102,8 +105,8 @@ export async function disableTotp(
     return { error: "Two factor authentication is not enabled" };
   }
 
-  const code = formData.get("code");
-  if (typeof code !== "string") {
+  const code = readCode(formData);
+  if (!code) {
     return { error: "Enter the 6 digit code from your authenticator app" };
   }
 
@@ -129,6 +132,14 @@ export async function disableTotp(
   return { success: true };
 }
 
+/**
+ * Finish enrollment: verify a code generated from the candidate secret, and
+ * only persist the secret once that succeeds.
+ *
+ * Confirming before storing is the point. It proves the authenticator app and
+ * the server agree, so a user cannot end up with 2FA enabled against a secret
+ * their phone never received, which would lock them out permanently.
+ */
 export async function confirmEnrollment(
   _prevState: ConfirmEnrollmentState,
   formData: FormData,
@@ -154,8 +165,8 @@ export async function confirmEnrollment(
     return { error: "Two factor authentication is already enabled" };
   }
 
-  const code = formData.get("code");
-  if (typeof code !== "string") {
+  const code = readCode(formData);
+  if (!code) {
     return { error: "Enter the 6 digit code from your authenticator app" };
   }
 
