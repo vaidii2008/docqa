@@ -22,6 +22,10 @@ export const outlineButtonLarge = `${base} ${large} ${outline}`;
 
 export const tonalButton = `${base} ${medium} bg-primary-container text-on-primary-container hover:shadow-soft`;
 
+// text-background keeps the label readable in both themes: white on the
+// dark red of light mode, near black on the soft pink of dark mode.
+export const dangerButton = `${base} ${medium} bg-danger text-background hover:-translate-y-px hover:shadow-soft`;
+
 export const textButton = `${base} ${compact} text-primary hover:bg-surface`;
 
 export const quietButton = `${base} ${compact} text-fg-muted hover:bg-surface hover:text-fg`;

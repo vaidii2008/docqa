@@ -1,51 +1,91 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
-  startEnrollment,
   confirmEnrollment,
   disableTotp,
-  type StartEnrollmentState,
+  startEnrollment,
   type ConfirmEnrollmentState,
   type DisableState,
+  type StartEnrollmentState,
 } from "@/lib/auth/enrollment";
+import { OtpInput } from "@/components/ui/otp-input";
+import {
+  dangerButton,
+  filledButton,
+  outlineButton,
+  tonalButton,
+} from "@/components/ui/button-variants";
 
-const initialConfirmState: ConfirmEnrollmentState = {};
-const initialDisableState: DisableState = {};
+// Every completed attempt bumps a counter that is used as the code input's
+// key. A new key remounts the boxes, so after a wrong code they come back
+// empty, focused on the first digit and shaking, with no state to reset by
+// hand.
+type Attempted<T> = T & { attempt: number };
+
+async function confirmWithAttempt(
+  previous: Attempted<ConfirmEnrollmentState>,
+  formData: FormData,
+): Promise<Attempted<ConfirmEnrollmentState>> {
+  return {
+    ...(await confirmEnrollment(previous, formData)),
+    attempt: previous.attempt + 1,
+  };
+}
+
+async function disableWithAttempt(
+  previous: Attempted<DisableState>,
+  formData: FormData,
+): Promise<Attempted<DisableState>> {
+  return {
+    ...(await disableTotp(previous, formData)),
+    attempt: previous.attempt + 1,
+  };
+}
+
+const CODE_LABEL = "6 digit code from your authenticator app";
 
 export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
   const [start, setStart] = useState<StartEnrollmentState | null>(null);
   const [starting, setStarting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [disabling, setDisabling] = useState(false);
-  const [disableState, disableAction, disablePending] = useActionState(
-    disableTotp,
-    initialDisableState,
-  );
   const [confirmState, confirmAction, confirming] = useActionState(
-    confirmEnrollment,
-    initialConfirmState,
+    confirmWithAttempt,
+    { attempt: 0 },
   );
+  const [disableState, disableAction, disablePending] = useActionState(
+    disableWithAttempt,
+    { attempt: 0 },
+  );
+
+  // Cancel closes the turn off form but cannot clear the action's state, so
+  // remember the attempt it happened at and only show errors from later
+  // attempts. Reopening then starts clean instead of replaying an old error.
+  const [cancelledAt, setCancelledAt] = useState(0);
+  const disableError =
+    disableState.attempt > cancelledAt ? disableState.error : undefined;
 
   // Shown once, immediately after enrollment. Only hashes are stored, so
   // navigating away loses these codes permanently.
   if (confirmState.recoveryCodes?.length) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+      <div className="flex flex-col gap-4">
+        <p
+          role="status"
+          className="bg-success-container text-success rounded-2xl px-4 py-3 text-sm font-medium"
+        >
           Two factor authentication is on.
         </p>
 
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-900">
-            Save your recovery codes
-          </p>
-          <p className="mt-1 text-sm text-amber-800">
+        <div className="bg-surface rounded-3xl p-5 sm:p-6">
+          <h3 className="font-semibold">Save your recovery codes</h3>
+          <p className="text-fg-muted mt-1 text-sm">
             Each code works once, and only if you lose access to your
             authenticator app. This is the only time they will be shown.
           </p>
 
-          <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-sm text-amber-900">
+          <ul className="mt-4 grid grid-cols-2 gap-x-6 gap-y-1.5 font-mono text-[15px]">
             {confirmState.recoveryCodes.map((code) => (
               <li key={code}>{code}</li>
             ))}
@@ -59,7 +99,7 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
               );
               setCopied(true);
             }}
-            className="mt-4 rounded-md border border-amber-300 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-100"
+            className={`${tonalButton} mt-5`}
           >
             {copied ? "Copied" : "Copy codes"}
           </button>
@@ -70,53 +110,56 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
 
   if (enabledAt && !disableState.success) {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-          Two factor authentication is on. You will be asked for a code from
-          your authenticator app the next time you sign in.
+      <div className="flex flex-col gap-4">
+        <p className="bg-success-container text-success rounded-2xl px-4 py-3 text-sm font-medium">
+          Two factor authentication is on for this account.
         </p>
 
         {disabling ? (
-          <form action={disableAction} className="flex flex-col gap-3">
+          <form
+            action={disableAction}
+            className="bg-surface flex flex-col gap-4 rounded-3xl p-5 sm:p-6"
+          >
             <p className="text-sm">
               Enter a current code to turn this off. Your recovery codes will be
               deleted too.
             </p>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="disable-code" className="text-sm font-medium">
-                Code
-              </label>
-              <input
-                id="disable-code"
-                name="code"
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                placeholder="123456"
-                required
-                className="w-40 rounded-md border border-gray-300 px-3 py-2 font-mono text-sm outline-none focus:border-gray-900"
-              />
-            </div>
+            <OtpInput
+              key={disableState.attempt}
+              name="code"
+              label={CODE_LABEL}
+              invalid={Boolean(disableError)}
+              describedBy={disableError ? "disable-error" : undefined}
+              disabled={disablePending}
+              autoFocus
+            />
 
-            {disableState.error ? (
-              <p className="text-sm text-red-600" role="alert">
-                {disableState.error}
+            {disableError ? (
+              <p
+                id="disable-error"
+                role="alert"
+                className="text-danger text-sm"
+              >
+                {disableError}
               </p>
             ) : null}
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="submit"
                 disabled={disablePending}
-                className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                className={dangerButton}
               >
                 {disablePending ? "Turning off..." : "Turn off"}
               </button>
               <button
                 type="button"
-                onClick={() => setDisabling(false)}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium transition-colors hover:bg-gray-100"
+                onClick={() => {
+                  setCancelledAt(disableState.attempt);
+                  setDisabling(false);
+                }}
+                className={outlineButton}
               >
                 Cancel
               </button>
@@ -126,7 +169,7 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
           <button
             type="button"
             onClick={() => setDisabling(true)}
-            className="self-start text-sm font-medium text-red-600 underline transition-colors hover:text-red-700"
+            className="text-danger focus-visible:outline-primary min-h-11 self-start rounded-full px-1 text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             Turn off two factor authentication
           </button>
@@ -137,7 +180,16 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
 
   if (!start?.qrSvg) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
+        {disableState.success ? (
+          <p
+            role="status"
+            className="bg-surface rounded-2xl px-4 py-3 text-sm font-medium"
+          >
+            Two factor authentication is off.
+          </p>
+        ) : null}
+
         <button
           type="button"
           disabled={starting}
@@ -146,12 +198,13 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
             setStart(await startEnrollment());
             setStarting(false);
           }}
-          className="self-start rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:opacity-50"
+          className={`${filledButton} self-start`}
         >
           {starting ? "Setting up..." : "Set up two factor authentication"}
         </button>
+
         {start?.error ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p role="alert" className="text-danger text-sm">
             {start.error}
           </p>
         ) : null}
@@ -160,45 +213,40 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm">
+    <div className="flex flex-col gap-5">
+      <p className="text-fg-muted text-sm">
         Scan this with your authenticator app, then enter the 6 digit code it
         shows.
       </p>
 
       <div
-        className="w-[200px] rounded-lg border border-gray-200 bg-white p-2"
-        // The QR is generated on the server, so the secret arrives as a drawn
-        // image rather than as a string in client side JavaScript.
+        className="w-[216px] rounded-2xl bg-white p-2"
+        // White in both themes on purpose: scanners need dark modules on a
+        // light background. The QR is drawn on the server, so the secret
+        // arrives as an image rather than as a string in client JavaScript.
         dangerouslySetInnerHTML={{ __html: start.qrSvg }}
       />
 
       {start.manualKey ? (
-        <p className="text-xs text-gray-500">
+        <p className="text-fg-muted text-xs">
           Cannot scan? Enter this key manually:{" "}
-          <code className="font-mono">{start.manualKey}</code>
+          <code className="text-fg font-mono">{start.manualKey}</code>
         </p>
       ) : null}
 
-      <form action={confirmAction} className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="code" className="text-sm font-medium">
-            Code
-          </label>
-          <input
-            id="code"
-            name="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="123456"
-            required
-            className="w-40 rounded-md border border-gray-300 px-3 py-2 font-mono text-sm outline-none focus:border-gray-900"
-          />
-        </div>
+      <form action={confirmAction} className="flex flex-col gap-4">
+        <OtpInput
+          key={confirmState.attempt}
+          name="code"
+          label={CODE_LABEL}
+          invalid={Boolean(confirmState.error)}
+          describedBy={confirmState.error ? "confirm-error" : undefined}
+          disabled={confirming}
+          autoFocus
+        />
 
         {confirmState.error ? (
-          <p className="text-sm text-red-600" role="alert">
+          <p id="confirm-error" role="alert" className="text-danger text-sm">
             {confirmState.error}
           </p>
         ) : null}
@@ -206,7 +254,7 @@ export function EnrollmentPanel({ enabledAt }: { enabledAt: Date | null }) {
         <button
           type="submit"
           disabled={confirming}
-          className="self-start rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-700 disabled:opacity-50"
+          className={`${filledButton} self-start`}
         >
           {confirming ? "Verifying..." : "Turn on"}
         </button>
