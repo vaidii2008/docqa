@@ -38,6 +38,17 @@ export function buildTotpUri(secret: string, email: string): string {
 }
 
 /**
+ * Strip the spaces authenticator apps show between digit groups, then check
+ * that exactly 6 digits are left. Returns null for anything that could never
+ * be a valid code, so callers can turn it away before doing anything costly
+ * with it, such as spending a rate limit attempt.
+ */
+export function normaliseTotpCode(code: string): string | null {
+  const normalised = code.replace(/\s/g, "");
+  return /^\d{6}$/.test(normalised) ? normalised : null;
+}
+
+/**
  * Check a user supplied 6 digit code against the secret.
  *
  * The window of 1 accepts the previous and next 30 second step as well as the
@@ -51,9 +62,9 @@ export function verifyTotpCode(params: {
   code: string;
 }): boolean {
   const { secret, email, code } = params;
-  const normalised = code.replace(/\s/g, "");
+  const normalised = normaliseTotpCode(code);
 
-  if (!/^\d{6}$/.test(normalised)) {
+  if (!normalised) {
     return false;
   }
 

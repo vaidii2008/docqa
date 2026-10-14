@@ -6,10 +6,12 @@ import { requireUserId } from "@/lib/auth/session";
 import {
   generateTotpSecret,
   buildTotpUri,
+  normaliseTotpCode,
   verifyTotpCode,
 } from "@/lib/auth/totp";
 import { renderQrSvg } from "@/lib/auth/qr";
 import { totpRatelimit } from "@/lib/rate-limit";
+import { checkLimit } from "@/lib/rate-limit/check-limit";
 import {
   generateRecoveryCodes,
   hashRecoveryCodes,
@@ -33,6 +35,38 @@ export type ConfirmEnrollmentState = {
   recoveryCodes?: string[];
   error?: string;
 };
+
+/**
+ * Read the code from the form and check its shape. Both actions below call
+ * this before the rate limit, so a half typed or empty code is turned away
+ * without using up one of the user's attempts.
+ */
+function readCode(formData: FormData): string | null {
+  const raw = formData.get("code");
+  return typeof raw === "string" ? normaliseTotpCode(raw) : null;
+}
+
+/**
+ * Spend one of the user's code attempts. Returns an error to show, or null
+ * when the code may be checked.
+ *
+ * Fails closed: if the limiter cannot be reached, the attempt is refused
+ * rather than checked without a limit, because the limit is the only thing
+ * stopping someone from guessing their way through all million codes.
+ */
+async function spendAttempt(key: string): Promise<string | null> {
+  const limit = await checkLimit(totpRatelimit, key);
+
+  if (limit === "unavailable") {
+    return "We could not check that code just now. Try again in a minute.";
+  }
+
+  if (limit === "limited") {
+    return "Too many attempts. Wait a few minutes and try again.";
+  }
+
+  return null;
+}
 
 /**
  * Begin enrollment: mint a candidate secret, stash it in the encrypted cookie
@@ -66,14 +100,6 @@ export async function startEnrollment(): Promise<StartEnrollmentState> {
   };
 }
 
-/**
- * Finish enrollment: verify a code generated from the candidate secret, and
- * only persist the secret once that succeeds.
- *
- * Confirming before storing is the point. It proves the authenticator app and
- * the server agree, so a user cannot end up with 2FA enabled against a secret
- * their phone never received, which would lock them out permanently.
- */
 export type DisableState = {
   success?: boolean;
   error?: string;
@@ -102,14 +128,14 @@ export async function disableTotp(
     return { error: "Two factor authentication is not enabled" };
   }
 
-  const code = formData.get("code");
-  if (typeof code !== "string") {
+  const code = readCode(formData);
+  if (!code) {
     return { error: "Enter the 6 digit code from your authenticator app" };
   }
 
-  const { success } = await totpRatelimit.limit(`disable:${userId}`);
-  if (!success) {
-    return { error: "Too many attempts. Wait a few minutes and try again." };
+  const attemptError = await spendAttempt(`disable:${userId}`);
+  if (attemptError) {
+    return { error: attemptError };
   }
 
   if (!verifyTotpCode({ secret: user.totpSecret, email: user.email, code })) {
@@ -129,6 +155,14 @@ export async function disableTotp(
   return { success: true };
 }
 
+/**
+ * Finish enrollment: verify a code generated from the candidate secret, and
+ * only persist the secret once that succeeds.
+ *
+ * Confirming before storing is the point. It proves the authenticator app and
+ * the server agree, so a user cannot end up with 2FA enabled against a secret
+ * their phone never received, which would lock them out permanently.
+ */
 export async function confirmEnrollment(
   _prevState: ConfirmEnrollmentState,
   formData: FormData,
@@ -154,16 +188,16 @@ export async function confirmEnrollment(
     return { error: "Two factor authentication is already enabled" };
   }
 
-  const code = formData.get("code");
-  if (typeof code !== "string") {
+  const code = readCode(formData);
+  if (!code) {
     return { error: "Enter the 6 digit code from your authenticator app" };
   }
 
   // Keyed by user id, so one account cannot grind through the code space and
   // cannot exhaust anyone else's allowance either.
-  const { success } = await totpRatelimit.limit(`enroll:${userId}`);
-  if (!success) {
-    return { error: "Too many attempts. Wait a few minutes and try again." };
+  const attemptError = await spendAttempt(`enroll:${userId}`);
+  if (attemptError) {
+    return { error: attemptError };
   }
 
   if (!verifyTotpCode({ secret, email: user.email, code })) {

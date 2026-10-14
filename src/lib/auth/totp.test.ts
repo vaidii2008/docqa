@@ -3,6 +3,7 @@ import { TOTP, Secret } from "otpauth";
 import {
   generateTotpSecret,
   buildTotpUri,
+  normaliseTotpCode,
   verifyTotpCode,
 } from "@/lib/auth/totp";
 
@@ -40,6 +41,19 @@ describe("buildTotpUri", () => {
     expect(uri.startsWith("otpauth://totp/")).toBe(true);
     expect(uri).toContain("issuer=DocQA");
     expect(uri).toContain(`secret=${secret}`);
+  });
+});
+
+describe("normaliseTotpCode", () => {
+  it("strips the spaces apps show between digit groups", () => {
+    expect(normaliseTotpCode("123 456")).toBe("123456");
+  });
+
+  it("returns null for anything that is not exactly 6 digits", () => {
+    expect(normaliseTotpCode("")).toBeNull();
+    expect(normaliseTotpCode("12345")).toBeNull();
+    expect(normaliseTotpCode("1234567")).toBeNull();
+    expect(normaliseTotpCode("12345a")).toBeNull();
   });
 });
 
@@ -94,7 +108,9 @@ describe("verifyTotpCode", () => {
 
     expect(verifyTotpCode({ secret, email: EMAIL, code: "" })).toBe(false);
     expect(verifyTotpCode({ secret, email: EMAIL, code: "12345" })).toBe(false);
-    expect(verifyTotpCode({ secret, email: EMAIL, code: "abcdef" })).toBe(false);
+    expect(verifyTotpCode({ secret, email: EMAIL, code: "abcdef" })).toBe(
+      false,
+    );
   });
 
   it("tolerates spaces, since authenticator apps display codes grouped", () => {

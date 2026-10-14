@@ -1,27 +1,194 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* dark: utilities follow the data-theme attribute that next-themes sets on
+   <html>, instead of the operating system setting, so the toggle wins. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* Lumen design tokens. Components never use raw hex values: they use these
+   names, so light and dark only differ here. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #ffffff;
+  --page: #f3f5fa;
+  --card: #ffffff;
+  --surface: #f0f2f8;
+  --surface-2: #e6e9f2;
+  --surface-3: #d9deea;
+  --fg: #1b1c20;
+  --fg-muted: #474c59;
+  --fg-subtle: #646979;
+  --line: rgb(27 28 32 / 0.12);
+  --primary: #2f49c4;
+  --on-primary: #ffffff;
+  --primary-container: #dee3ff;
+  --on-primary-container: #13206b;
+  --accent-1: #0f8f86;
+  --accent-2: #4f46e5;
+  --accent-3: #c2410c;
+  --aura-1: rgb(20 184 166 / 0.32);
+  --aura-2: rgb(99 102 241 / 0.3);
+  --aura-3: rgb(251 146 60 / 0.26);
+  --danger: #b3261e;
+  --danger-container: #fce4e2;
+  --success: #146c2e;
+  --success-container: #ddf5e3;
+  --mark: rgb(99 102 241 / 0.16);
+  --shadow-color: rgb(27 28 32 / 0.08);
 }
 
+[data-theme="dark"] {
+  --bg: #111216;
+  --page: #111216;
+  --card: #1b1c22;
+  --surface: #1e1f26;
+  --surface-2: #272932;
+  --surface-3: #32353f;
+  --fg: #e6e7ec;
+  --fg-muted: #b7bbc8;
+  --fg-subtle: #9196a5;
+  --line: rgb(230 231 236 / 0.12);
+  --primary: #abb9ff;
+  --on-primary: #0f1a55;
+  --primary-container: #2a3570;
+  --on-primary-container: #dee3ff;
+  --accent-1: #5eead4;
+  --accent-2: #a5b4fc;
+  --accent-3: #fdba74;
+  --aura-1: rgb(45 212 191 / 0.22);
+  --aura-2: rgb(129 140 248 / 0.24);
+  --aura-3: rgb(253 186 116 / 0.16);
+  --danger: #f2b8b5;
+  --danger-container: #4a1b19;
+  --success: #7cd992;
+  --success-container: #163a22;
+  --mark: rgb(165 180 252 / 0.18);
+  --shadow-color: rgb(0 0 0 / 0.45);
+}
+
+/* Expose the tokens as Tailwind colours, so bg-surface, text-fg-muted,
+   bg-primary and friends exist and follow the theme automatically. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-page: var(--page);
+  --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-accent-1: var(--accent-1);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+  --color-aura-1: var(--aura-1);
+  --color-aura-2: var(--aura-2);
+  --color-aura-3: var(--aura-3);
+  --color-danger: var(--danger);
+  --color-danger-container: var(--danger-container);
+  --color-success: var(--success);
+  --color-success-container: var(--success-container);
+  --color-mark: var(--mark);
+  --shadow-soft: 0 1px 3px var(--shadow-color), 0 8px 28px var(--shadow-color);
+  --font-sans: var(--font-figtree);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+body {
+  background: var(--bg);
+  color: var(--fg);
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+
+/* Slow drift for the ambient glow behind the marketing and auth pages.
+   Exposed as the animate-aura utility. */
+@theme {
+  --animate-aura: aura-drift 18s ease-in-out infinite alternate;
+
+  @keyframes aura-drift {
+    from {
+      transform: scale(1) translate(0, 0);
+    }
+    to {
+      transform: scale(1.08) translate(-2%, 2%);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* The brand gradient. glow-text paints it into headline text, glow-ring uses
+   it as an animated border. Both pan slowly, and stop for reduced motion. */
+@utility glow-text {
+  background-image: linear-gradient(
+    90deg,
+    var(--accent-1),
+    var(--accent-2) 45%,
+    var(--accent-3) 80%,
+    var(--accent-1)
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: glow-pan 9s ease-in-out infinite;
+}
+
+@utility glow-ring {
+  background-image: linear-gradient(
+    90deg,
+    var(--accent-1),
+    var(--accent-2) 45%,
+    var(--accent-3) 80%,
+    var(--accent-1)
+  );
+  background-size: 220% 100%;
+  animation: glow-pan 9s ease-in-out infinite;
+}
+
+@keyframes glow-pan {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-text,
+  .glow-ring {
+    animation: none;
+  }
+}
+
+/* Shake for a rejected code. Plays once when the code boxes mount in their
+   error state, and is switched off for reduced motion where it is used. */
+@theme {
+  --animate-shake: shake 0.42s ease;
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-8px);
+    }
+    40% {
+      transform: translateX(7px);
+    }
+    60% {
+      transform: translateX(-5px);
+    }
+    80% {
+      transform: translateX(3px);
+    }
+  }
 }

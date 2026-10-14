@@ -48,10 +48,9 @@ describe("PasswordInput", () => {
     // what tells a sighted user what it does before they click it.
     renderField();
 
-    expect(screen.getByRole("button", { name: "Show password" })).toHaveAttribute(
-      "title",
-      "Show password",
-    );
+    expect(
+      screen.getByRole("button", { name: "Show password" }),
+    ).toHaveAttribute("title", "Show password");
   });
 
   it("does not submit the surrounding form when toggled", async () => {

@@ -41,7 +41,7 @@ export function PasswordInput({
           autoComplete={autoComplete}
           required
           minLength={minLength}
-          className="w-full rounded-md border border-gray-300 py-2 pl-3 pr-10 text-sm outline-none focus:border-gray-900"
+          className="w-full rounded-md border border-gray-300 py-2 pr-10 pl-3 text-sm outline-none focus:border-gray-900"
         />
         <button
           // type="button" is load bearing. A button inside a form defaults to
@@ -56,7 +56,7 @@ export function PasswordInput({
           // has no accessible name, and title alone is not reliably announced.
           aria-label={action}
           title={action}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-gray-500 transition-colors hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-900"
+          className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-gray-500 transition-colors hover:text-gray-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gray-900"
         >
           {visible ? <EyeOffIcon /> : <EyeIcon />}
         </button>
